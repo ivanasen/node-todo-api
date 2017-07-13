@@ -1,26 +1,17 @@
-const env = process.env.NODE_ENV || 'development';
-console.log(`env **** ${env}`);
-if (env === 'development') {
-    process.env.PORT = 3000;
-    process.env.MONGODB_URI = 'mongodb://localhost:27017/TodoApp';
-} else if (env === 'test') {
-    process.env.PORT = 3000;
-    process.env.MONGODB_URI = 'mongodb://localhost:27017/TodoAppTest';    
-}
+require('./config/config');
 
 const _ = require('lodash');
 const express = require('express');
 const bodyParser = require('body-parser');
-const {ObjectID} = require('mongodb');
+const { ObjectID } = require('mongodb');
 
-const { mongoose } = require('./db/mongoose'), 
-    { Todo } = require('./db/models/todo'), 
-    { User } = require('./db/models/user');
+const { mongoose } = require('./db/mongoose');
+const { Todo } = require('./db/models/todo'); 
+const { User } = require('./db/models/user');
+const { authenticate } = require('./middleware/authenticate');
 
 const port = process.env.PORT || 3000;
-
 let app = express();
-
 app.use(bodyParser.json());
 
 app.post('/todos', (req, res) => {
@@ -83,6 +74,10 @@ app.patch('/todos/:id', (req, res) => {
             res.status(400).send();
         });    
 });
+
+app.get('/users/me', authenticate, (req, res) => {
+    res.send(req.user);
+})
 
 app.post('/users', (req, res) => {
     let body = _.pick(req.body, ['email', 'password']);
