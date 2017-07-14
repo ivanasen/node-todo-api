@@ -217,8 +217,10 @@ describe('POST /users', () => {
                 User.findOne({email}).then((user) => {
                     expect(user).to.exist;
                     expect(user.password).to.not.equal(password);
-                });
-                done();
+                    done();
+                }).catch((err) => {
+                    done(err);
+                });                
             });
     });
 
@@ -242,5 +244,68 @@ describe('POST /users', () => {
             })
             .expect(400)
             .end(done);
+    });
+});
+
+describe('POST /users/login', () => {
+    it('should return a token when user has logged in', (done) => {
+        request(app)
+            .post('/users/login')
+            .send({
+                email: testUsers[1].email,
+                password: testUsers[1].password
+            })
+            .expect(200)
+            .expect((res) => {
+                expect(res.headers['x-auth']).to.exist;
+                expect(res.body.email).to.equal(testUsers[1].email);
+            })
+            .end((err, res) => {
+                if (err) {
+                    return done(err);
+                }
+
+                User.findById(testUsers[1]._id).then((user) => {
+                    expect(user.tokens[0]).to.include({
+                        access: 'auth',
+                        token: res.headers['x-auth']
+                    });
+                    done();
+                }).catch((err) => {
+                    done(err);
+                });
+            });
+    });
+
+    it('should return 400 when wrong credentials', (done) => {
+        request(app)
+            .post('/users/login')
+            .send({
+                email: 'wrong.com',
+                password: '123'
+            })
+            .expect(400)
+            .end(done);
+    });
+});
+
+describe('DELETE /users/me/token', () => {
+    it('should remove auth token on logout', (done) => {
+        request(app)
+            .delete('/users/me/token')
+            .set('x-auth', testUsers[0].tokens[0].token)
+            .expect(200)
+            .end((err, res) => {
+                if (err) {
+                    return done(err);
+                }
+
+                User.findById(testUsers[0]._id).then((user) => {
+                    expect(user.tokens).to.be.empty;
+                    done();
+                }, (err) => {
+                    done(err);
+                });
+            });
     });
 });
