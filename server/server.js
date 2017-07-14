@@ -16,9 +16,8 @@ let app = express();
 app.use(bodyParser.json());
 
 app.post('/todos', authenticate, (req, res) => {
-    console.log(req.body);
     let todo = new Todo({
-        text: req.body,
+        text: req.body.text,
         _creator: req.user._id
     });
 
@@ -39,7 +38,7 @@ app.get('/todos/:id', authenticate, (req, res) => {
         return res.status(404).send();
     }
 
-    Todo.find({
+    Todo.findOne({
         _id: new ObjectID(id),
         _creator: req.user._id
     }).then((todo) => {
@@ -51,7 +50,7 @@ app.get('/todos/:id', authenticate, (req, res) => {
 });
 
 app.delete('/todos/:id', authenticate, (req, res) => {
-    Todo.findAndRemove({
+    Todo.findOneAndRemove({
         _id: req.params.id,
         _creator: req.user._id
     }).then((todo) => {
@@ -75,7 +74,7 @@ app.patch('/todos/:id', authenticate, (req, res) => {
         body.completedAt = null;
     }
 
-    Todo.findAndUpdate({
+    Todo.findOneAndUpdate({
         _id: id,
         _creator: req.user._id
     }, {$set: body}, {new: true})
